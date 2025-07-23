@@ -49,7 +49,7 @@ export const ProductList = ({ products, onDeleteProduct, onEditProduct }: Produc
                   </div>
                   <div className="flex gap-4 text-sm text-muted-foreground">
                     <span>Weight: {product.weight}kg ({(product.weight * 1000).toFixed(0)}g)</span>
-                    <span>Price: ₹{product.price.toFixed(2)}</span>
+                    <span>Price: <span className="line-through text-muted-foreground">₹{product.mainPrice.toFixed(2)}</span> ₹{product.discountedPrice.toFixed(2)}</span>
                   </div>
                 </div>
                 

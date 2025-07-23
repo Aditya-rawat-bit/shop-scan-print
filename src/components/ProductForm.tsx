@@ -11,7 +11,8 @@ export interface Product {
   id: string;
   name: string;
   weight: number;
-  price: number;
+  mainPrice: number;
+  discountedPrice: number;
   barcode: string;
   createdAt: Date;
 }
@@ -34,12 +35,13 @@ export const ProductForm = ({
   const [name, setName] = useState(editingProduct?.name || "");
   const [weightKg, setWeightKg] = useState(editingProduct ? Math.floor(editingProduct.weight / 1000).toString() : "0");
   const [weightG, setWeightG] = useState(editingProduct ? (editingProduct.weight % 1000).toString() : "0");
-  const [price, setPrice] = useState(editingProduct?.price?.toString() || "");
+  const [mainPrice, setMainPrice] = useState(editingProduct?.mainPrice?.toString() || "");
+  const [discountedPrice, setDiscountedPrice] = useState(editingProduct?.discountedPrice?.toString() || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !price) {
+    if (!name || !mainPrice || !discountedPrice) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -69,7 +71,8 @@ export const ProductForm = ({
         ...editingProduct,
         name,
         weight: totalWeightInGrams,
-        price: parseFloat(price),
+        mainPrice: parseFloat(mainPrice),
+        discountedPrice: parseFloat(discountedPrice),
       };
       onUpdateProduct(updatedProduct);
       toast.success("Product updated successfully!");
@@ -79,7 +82,8 @@ export const ProductForm = ({
         id: uuidv4(),
         name,
         weight: totalWeightInGrams,
-        price: parseFloat(price),
+        mainPrice: parseFloat(mainPrice),
+        discountedPrice: parseFloat(discountedPrice),
         barcode: generateBarcode(),
         createdAt: new Date()
       };
@@ -91,7 +95,8 @@ export const ProductForm = ({
     setName("");
     setWeightKg("0");
     setWeightG("0");
-    setPrice("");
+    setMainPrice("");
+    setDiscountedPrice("");
     if (onCancelEdit) onCancelEdit();
   };
 
@@ -105,7 +110,8 @@ export const ProductForm = ({
     setName("");
     setWeightKg("0");
     setWeightG("0");
-    setPrice("");
+    setMainPrice("");
+    setDiscountedPrice("");
     if (onCancelEdit) onCancelEdit();
   };
 
@@ -161,14 +167,27 @@ export const ProductForm = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="price">Price (₹)</Label>
+            <Label htmlFor="mainPrice">Main Price (₹)</Label>
             <Input
-              id="price"
+              id="mainPrice"
               type="number"
               step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Enter price in rupees"
+              value={mainPrice}
+              onChange={(e) => setMainPrice(e.target.value)}
+              placeholder="Enter main price"
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="discountedPrice">Discounted Price (₹)</Label>
+            <Input
+              id="discountedPrice"
+              type="number"
+              step="0.01"
+              value={discountedPrice}
+              onChange={(e) => setDiscountedPrice(e.target.value)}
+              placeholder="Enter selling price"
               required
             />
           </div>

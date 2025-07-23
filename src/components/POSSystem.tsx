@@ -25,7 +25,7 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
   const [customerName, setCustomerName] = useState("");
   const [showScanner, setShowScanner] = useState(false);
 
-  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = cart.reduce((sum, item) => sum + (item.discountedPrice * item.quantity), 0);
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {
@@ -161,7 +161,7 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="text-sm text-muted-foreground">
-                        {product.weight}kg ({(product.weight * 1000).toFixed(0)}g) - ₹{product.price.toFixed(2)}
+                        {product.weight}kg ({(product.weight * 1000).toFixed(0)}g) - <span className="line-through text-muted-foreground">₹{product.mainPrice.toFixed(2)}</span> ₹{product.discountedPrice.toFixed(2)}
                       </div>
                       <Button
                         size="sm"
@@ -241,8 +241,13 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell>₹{item.price.toFixed(2)}</TableCell>
-                        <TableCell>₹{(item.price * item.quantity).toFixed(2)}</TableCell>
+                        <TableCell>
+                          <div>
+                            <span className="line-through text-muted-foreground text-sm">₹{item.mainPrice.toFixed(2)}</span>
+                            <div>₹{item.discountedPrice.toFixed(2)}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>₹{(item.discountedPrice * item.quantity).toFixed(2)}</TableCell>
                         <TableCell>
                           <Button
                             size="sm"

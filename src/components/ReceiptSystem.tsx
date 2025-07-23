@@ -121,7 +121,7 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
              <tr>
                <td>${item.name}</td>
                <td class="right">${item.quantity}x</td>
-               <td class="right">₹${(item.price * item.quantity).toFixed(2)}</td>
+               <td class="right">₹${(item.discountedPrice * item.quantity).toFixed(2)}</td>
              </tr>
           `).join('')}
         </table>
@@ -166,7 +166,7 @@ ${receipt.timestamp.toLocaleString()}
 ${receipt.customerName ? `Customer: ${receipt.customerName}` : ''}
 -----------------------------
 ${receipt.items.map(item => 
-  `${item.name.padEnd(15)} ${item.quantity}x ₹${(item.price * item.quantity).toFixed(2).padStart(8)}`
+  `${item.name.padEnd(15)} ${item.quantity}x ₹${(item.discountedPrice * item.quantity).toFixed(2).padStart(8)}`
 ).join('\n')}
 -----------------------------
 ${shopSettings.taxRate > 0 ? `Subtotal${' '.repeat(10)}₹${subtotal.toFixed(2).padStart(8)}
@@ -312,8 +312,13 @@ Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart
                         </div>
                       </TableCell>
                       <TableCell>{item.quantity}</TableCell>
-                      <TableCell>₹{item.price.toFixed(2)}</TableCell>
-                      <TableCell>₹{(item.price * item.quantity).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <div>
+                          <span className="line-through text-muted-foreground text-sm">₹{item.mainPrice.toFixed(2)}</span>
+                          <div>₹{item.discountedPrice.toFixed(2)}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>₹{(item.discountedPrice * item.quantity).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

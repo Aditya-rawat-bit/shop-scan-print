@@ -61,7 +61,7 @@ export const BarcodeDisplay = ({ product, onClose }: BarcodeDisplayProps) => {
             <body>
               <div class="product-info">
                 <h2>${product.name}</h2>
-                <p>Weight: ${product.weight}kg | Price: $${product.price.toFixed(2)}</p>
+                <p>Weight: ${product.weight}kg | Price: ₹${product.discountedPrice.toFixed(2)}</p>
               </div>
               <div class="barcode">
                 <img src="${canvasRef.current.toDataURL()}" alt="Barcode" />
@@ -88,7 +88,7 @@ export const BarcodeDisplay = ({ product, onClose }: BarcodeDisplayProps) => {
           <h3 className="font-semibold text-lg">{product.name}</h3>
           <div className="flex justify-center gap-4 text-sm text-muted-foreground">
             <span>Weight: {product.weight}kg</span>
-            <span>Price: ${product.price.toFixed(2)}</span>
+            <span>Price: <span className="line-through text-muted-foreground">₹{product.mainPrice.toFixed(2)}</span> ₹{product.discountedPrice.toFixed(2)}</span>
           </div>
         </div>
         
