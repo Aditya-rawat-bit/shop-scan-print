@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,24 @@ export const Settings = ({ products, onImportProducts }: SettingsProps) => {
   const [taxRate, setTaxRate] = useState("0");
   const [autoConnect, setAutoConnect] = useState(false);
   const [printerName, setPrinterName] = useState("");
+
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('pos-settings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        setShopName(settings.shopName || "MY SHOP");
+        setShopAddress(settings.shopAddress || "");
+        setShopPhone(settings.shopPhone || "");
+        setTaxRate(settings.taxRate?.toString() || "0");
+        setAutoConnect(settings.autoConnect || false);
+        setPrinterName(settings.printerName || "");
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+      }
+    }
+  }, []);
 
   const handleSaveSettings = () => {
     // Save settings to localStorage
@@ -101,20 +119,35 @@ export const Settings = ({ products, onImportProducts }: SettingsProps) => {
     try {
       // Check if Web Bluetooth is supported
       if (!('bluetooth' in navigator)) {
-        toast.error("Bluetooth is not supported in this browser");
+        toast.error("Bluetooth is not supported in this browser. Please use Chrome or Edge.");
         return;
       }
 
-      // Request Bluetooth device
+      // Request Bluetooth device with more common filters for thermal printers
       const device = await (navigator as any).bluetooth.requestDevice({
-        filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
-        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+        filters: [
+          { namePrefix: "POS" },
+          { namePrefix: "BT" },
+          { namePrefix: "Thermal" },
+          { namePrefix: "Printer" },
+          { services: ['000018f0-0000-1000-8000-00805f9b34fb'] },
+          { services: ['0000ff00-0000-1000-8000-00805f9b34fb'] }
+        ],
+        optionalServices: [
+          '000018f0-0000-1000-8000-00805f9b34fb',
+          '0000ff00-0000-1000-8000-00805f9b34fb',
+          '00001101-0000-1000-8000-00805f9b34fb'
+        ]
       });
 
       setPrinterName(device.name || "Unknown Printer");
       toast.success(`Connected to ${device.name || "Bluetooth Printer"}`);
-    } catch (error) {
-      toast.error("Failed to connect to printer");
+    } catch (error: any) {
+      if (error.name === 'NotFoundError') {
+        toast.error("No Bluetooth printer found. Make sure your printer is in pairing mode.");
+      } else {
+        toast.error("Failed to connect to printer: " + error.message);
+      }
     }
   };
 

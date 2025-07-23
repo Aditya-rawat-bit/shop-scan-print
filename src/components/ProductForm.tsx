@@ -32,14 +32,23 @@ export const ProductForm = ({
   onCancelEdit 
 }: ProductFormProps) => {
   const [name, setName] = useState(editingProduct?.name || "");
-  const [weight, setWeight] = useState(editingProduct?.weight?.toString() || "");
+  const [weightKg, setWeightKg] = useState(editingProduct ? Math.floor(editingProduct.weight / 1000).toString() : "0");
+  const [weightG, setWeightG] = useState(editingProduct ? (editingProduct.weight % 1000).toString() : "0");
   const [price, setPrice] = useState(editingProduct?.price?.toString() || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !weight || !price) {
+    if (!name || !price) {
       toast.error("Please fill in all fields");
+      return;
+    }
+
+    // Calculate total weight in grams
+    const totalWeightInGrams = (parseFloat(weightKg) * 1000) + parseFloat(weightG);
+    
+    if (totalWeightInGrams <= 0) {
+      toast.error("Please enter a valid weight");
       return;
     }
 
@@ -59,7 +68,7 @@ export const ProductForm = ({
       const updatedProduct: Product = {
         ...editingProduct,
         name,
-        weight: parseFloat(weight),
+        weight: totalWeightInGrams,
         price: parseFloat(price),
       };
       onUpdateProduct(updatedProduct);
@@ -69,7 +78,7 @@ export const ProductForm = ({
       const product: Product = {
         id: uuidv4(),
         name,
-        weight: parseFloat(weight),
+        weight: totalWeightInGrams,
         price: parseFloat(price),
         barcode: generateBarcode(),
         createdAt: new Date()
@@ -80,7 +89,8 @@ export const ProductForm = ({
 
     // Reset form
     setName("");
-    setWeight("");
+    setWeightKg("0");
+    setWeightG("0");
     setPrice("");
     if (onCancelEdit) onCancelEdit();
   };
@@ -93,7 +103,8 @@ export const ProductForm = ({
 
   const handleCancel = () => {
     setName("");
-    setWeight("");
+    setWeightKg("0");
+    setWeightG("0");
     setPrice("");
     if (onCancelEdit) onCancelEdit();
   };
@@ -121,16 +132,32 @@ export const ProductForm = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="weight">Weight (kg)</Label>
-            <Input
-              id="weight"
-              type="number"
-              step="0.01"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              placeholder="Enter weight in kg"
-              required
-            />
+            <Label>Weight</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="weightKg" className="text-sm">Kilograms</Label>
+                <Input
+                  id="weightKg"
+                  type="number"
+                  min="0"
+                  value={weightKg}
+                  onChange={(e) => setWeightKg(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="weightG" className="text-sm">Grams</Label>
+                <Input
+                  id="weightG"
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={weightG}
+                  onChange={(e) => setWeightG(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+            </div>
           </div>
           
           <div className="space-y-2">
