@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,9 +24,46 @@ interface ReceiptSystemProps {
   onDeleteReceipt: (id: string) => void;
 }
 
+interface ShopSettings {
+  shopName: string;
+  shopAddress: string;
+  shopPhone: string;
+  taxRate: number;
+  autoConnect: boolean;
+  printerName: string;
+}
+
 export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps) => {
   const [selectedReceipt, setSelectedReceipt] = useState<ReceiptData | null>(null);
+  const [shopSettings, setShopSettings] = useState<ShopSettings>({
+    shopName: "MY SHOP",
+    shopAddress: "",
+    shopPhone: "",
+    taxRate: 0,
+    autoConnect: false,
+    printerName: ""
+  });
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Load shop settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('pos-settings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        setShopSettings({
+          shopName: settings.shopName || "MY SHOP",
+          shopAddress: settings.shopAddress || "",
+          shopPhone: settings.shopPhone || "",
+          taxRate: settings.taxRate || 0,
+          autoConnect: settings.autoConnect || false,
+          printerName: settings.printerName || ""
+        });
+      } catch (error) {
+        console.error("Failed to load shop settings:", error);
+      }
+    }
+  }, []);
 
   const handlePrint = (receipt: ReceiptData) => {
     const printWindow = window.open('', '_blank');
@@ -52,6 +89,9 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
   };
 
   const generatePrintableReceipt = (receipt: ReceiptData) => {
+    const subtotal = receipt.total / (1 + shopSettings.taxRate / 100);
+    const taxAmount = receipt.total - subtotal;
+    
     return `
       <!DOCTYPE html>
       <html>
@@ -68,7 +108,9 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
       </head>
       <body>
         <div class="center">
-          <h2>MY SHOP</h2>
+          <h2>${shopSettings.shopName}</h2>
+          ${shopSettings.shopAddress ? `<p>${shopSettings.shopAddress}</p>` : ''}
+          ${shopSettings.shopPhone ? `<p>Phone: ${shopSettings.shopPhone}</p>` : ''}
           <p>Receipt #${receipt.id.slice(0, 8)}</p>
           <p>${receipt.timestamp.toLocaleString()}</p>
           ${receipt.customerName ? `<p>Customer: ${receipt.customerName}</p>` : ''}
@@ -85,6 +127,16 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
         </table>
         <div class="line"></div>
         <table>
+           ${shopSettings.taxRate > 0 ? `
+           <tr>
+             <td>Subtotal</td>
+             <td class="right">₹${subtotal.toFixed(2)}</td>
+           </tr>
+           <tr>
+             <td>Tax (${shopSettings.taxRate}%)</td>
+             <td class="right">₹${taxAmount.toFixed(2)}</td>
+           </tr>
+           ` : ''}
            <tr>
              <td><strong>TOTAL</strong></td>
              <td class="right"><strong>₹${receipt.total.toFixed(2)}</strong></td>
@@ -93,6 +145,7 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
         <div class="line"></div>
         <div class="center">
           <p>Thank you for your business!</p>
+          <p>Visit us again!</p>
         </div>
       </body>
       </html>
@@ -100,9 +153,13 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
   };
 
   const generateTextReceipt = (receipt: ReceiptData) => {
+    const subtotal = receipt.total / (1 + shopSettings.taxRate / 100);
+    const taxAmount = receipt.total - subtotal;
+    
     return `
 =============================
-         MY SHOP
+      ${shopSettings.shopName}
+${shopSettings.shopAddress ? shopSettings.shopAddress + '\n' : ''}${shopSettings.shopPhone ? 'Phone: ' + shopSettings.shopPhone + '\n' : ''}
 =============================
 Receipt #${receipt.id.slice(0, 8)}
 ${receipt.timestamp.toLocaleString()}
@@ -112,9 +169,13 @@ ${receipt.items.map(item =>
   `${item.name.padEnd(15)} ${item.quantity}x ₹${(item.price * item.quantity).toFixed(2).padStart(8)}`
 ).join('\n')}
 -----------------------------
-TOTAL${' '.repeat(15)}₹${receipt.total.toFixed(2).padStart(8)}
+${shopSettings.taxRate > 0 ? `Subtotal${' '.repeat(10)}₹${subtotal.toFixed(2).padStart(8)}
+Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart(8)}
+-----------------------------
+` : ''}TOTAL${' '.repeat(15)}₹${receipt.total.toFixed(2).padStart(8)}
 =============================
-    Thank you!
+    Thank you for your business!
+         Visit us again!
 =============================
     `;
   };
