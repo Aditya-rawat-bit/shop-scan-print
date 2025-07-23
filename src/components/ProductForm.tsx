@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -18,12 +18,22 @@ export interface Product {
 
 interface ProductFormProps {
   onAddProduct: (product: Product) => void;
+  onUpdateProduct: (product: Product) => void;
+  products: Product[];
+  editingProduct?: Product | null;
+  onCancelEdit?: () => void;
 }
 
-export const ProductForm = ({ onAddProduct }: ProductFormProps) => {
-  const [name, setName] = useState("");
-  const [weight, setWeight] = useState("");
-  const [price, setPrice] = useState("");
+export const ProductForm = ({ 
+  onAddProduct, 
+  onUpdateProduct, 
+  products, 
+  editingProduct, 
+  onCancelEdit 
+}: ProductFormProps) => {
+  const [name, setName] = useState(editingProduct?.name || "");
+  const [weight, setWeight] = useState(editingProduct?.weight?.toString() || "");
+  const [price, setPrice] = useState(editingProduct?.price?.toString() || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,35 +43,67 @@ export const ProductForm = ({ onAddProduct }: ProductFormProps) => {
       return;
     }
 
-    const product: Product = {
-      id: uuidv4(),
-      name,
-      weight: parseFloat(weight),
-      price: parseFloat(price),
-      barcode: generateBarcode(),
-      createdAt: new Date()
-    };
+    // Check for duplicate product names (case insensitive)
+    const isDuplicate = products.some(product => 
+      product.name.toLowerCase() === name.toLowerCase() && 
+      (!editingProduct || product.id !== editingProduct.id)
+    );
 
-    onAddProduct(product);
+    if (isDuplicate) {
+      toast.error("Product with this name already exists!");
+      return;
+    }
+
+    if (editingProduct) {
+      // Update existing product
+      const updatedProduct: Product = {
+        ...editingProduct,
+        name,
+        weight: parseFloat(weight),
+        price: parseFloat(price),
+      };
+      onUpdateProduct(updatedProduct);
+      toast.success("Product updated successfully!");
+    } else {
+      // Add new product
+      const product: Product = {
+        id: uuidv4(),
+        name,
+        weight: parseFloat(weight),
+        price: parseFloat(price),
+        barcode: generateBarcode(),
+        createdAt: new Date()
+      };
+      onAddProduct(product);
+      toast.success("Product added successfully!");
+    }
+
+    // Reset form
     setName("");
     setWeight("");
     setPrice("");
-    toast.success("Product added successfully!");
+    if (onCancelEdit) onCancelEdit();
   };
 
   const generateBarcode = () => {
-    // Generate a unique barcode using timestamp and random number
-    const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `${timestamp.slice(-8)}${random}`; // 11 digit code
+    // Generate barcode with format: 9130589130 + incremental number
+    const nextNumber = products.length + 1;
+    return `9130589130${nextNumber}`;
+  };
+
+  const handleCancel = () => {
+    setName("");
+    setWeight("");
+    setPrice("");
+    if (onCancelEdit) onCancelEdit();
   };
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlusCircle className="h-5 w-5" />
-          Add New Product
+          {editingProduct ? <Edit className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />}
+          {editingProduct ? "Edit Product" : "Add New Product"}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -104,9 +146,16 @@ export const ProductForm = ({ onAddProduct }: ProductFormProps) => {
             />
           </div>
           
-          <Button type="submit" className="w-full">
-            Add Product
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" className="flex-1">
+              {editingProduct ? "Update Product" : "Add Product"}
+            </Button>
+            {editingProduct && (
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>

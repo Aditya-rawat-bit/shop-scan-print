@@ -2,36 +2,87 @@ import { useState } from "react";
 import { ProductForm, Product } from "@/components/ProductForm";
 import { ProductList } from "@/components/ProductList";
 import { POSNavigation } from "@/components/POSNavigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Store } from "lucide-react";
+import { POSSystem } from "@/components/POSSystem";
+import { ReceiptSystem } from "@/components/ReceiptSystem";
+import { Settings } from "@/components/Settings";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from 'uuid';
+
+interface CartItem extends Product {
+  quantity: number;
+}
+
+interface ReceiptData {
+  id: string;
+  customerName?: string;
+  items: CartItem[];
+  total: number;
+  timestamp: Date;
+}
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("products");
   const [products, setProducts] = useState<Product[]>([]);
+  const [receipts, setReceipts] = useState<ReceiptData[]>([]);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const handleAddProduct = (product: Product) => {
-    setProducts(prev => [...prev, product]);
+    setProducts([...products, product]);
+  };
+
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    setEditingProduct(null);
   };
 
   const handleDeleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
-    toast.success("Product deleted successfully!");
+    setProducts(products.filter(product => product.id !== id));
+    toast.success("Product deleted successfully");
   };
 
   const handleEditProduct = (product: Product) => {
-    // For now, just show a toast - we can implement edit functionality later
-    toast.info("Edit functionality coming soon!");
+    setEditingProduct(product);
+    setActiveTab("products");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProduct(null);
+  };
+
+  const handleGenerateReceipt = (cartItems: CartItem[], total: number) => {
+    const receipt: ReceiptData = {
+      id: uuidv4(),
+      items: cartItems,
+      total,
+      timestamp: new Date()
+    };
+    setReceipts([receipt, ...receipts]);
+  };
+
+  const handleDeleteReceipt = (id: string) => {
+    setReceipts(receipts.filter(receipt => receipt.id !== id));
+    toast.success("Receipt deleted successfully");
+  };
+
+  const handleImportProducts = (importedProducts: Product[]) => {
+    setProducts(importedProducts);
+    toast.success("Products imported successfully");
   };
 
   const renderContent = () => {
     switch (activeTab) {
       case "products":
         return (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <ProductForm onAddProduct={handleAddProduct} />
-            <ProductList 
+          <div className="space-y-6">
+            <ProductForm 
+              onAddProduct={handleAddProduct}
+              onUpdateProduct={handleUpdateProduct}
               products={products}
+              editingProduct={editingProduct}
+              onCancelEdit={handleCancelEdit}
+            />
+            <ProductList 
+              products={products} 
               onDeleteProduct={handleDeleteProduct}
               onEditProduct={handleEditProduct}
             />
@@ -39,38 +90,24 @@ const Index = () => {
         );
       case "pos":
         return (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Store className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Point of Sale</h3>
-              <p className="text-muted-foreground text-center">
-                POS functionality coming soon!<br />
-                This will include barcode scanning and billing.
-              </p>
-            </CardContent>
-          </Card>
+          <POSSystem 
+            products={products}
+            onGenerateReceipt={handleGenerateReceipt}
+          />
         );
       case "receipts":
         return (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Store className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Receipt History</h3>
-              <p className="text-muted-foreground">Receipt management coming soon!</p>
-            </CardContent>
-          </Card>
+          <ReceiptSystem 
+            receipts={receipts}
+            onDeleteReceipt={handleDeleteReceipt}
+          />
         );
       case "settings":
         return (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Store className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Settings</h3>
-              <p className="text-muted-foreground">
-                Printer configuration and app settings coming soon!
-              </p>
-            </CardContent>
-          </Card>
+          <Settings 
+            products={products}
+            onImportProducts={handleImportProducts}
+          />
         );
       default:
         return null;
@@ -82,11 +119,13 @@ const Index = () => {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <Store className="h-8 w-8 text-primary" />
+            <div className="h-8 w-8 bg-primary rounded flex items-center justify-center text-primary-foreground font-bold">
+              S
+            </div>
             <div>
               <h1 className="text-2xl font-bold">Shop POS System</h1>
               <p className="text-sm text-muted-foreground">
-                Manage products, generate barcodes, and process sales
+                Complete POS solution with barcode generation and thermal printing
               </p>
             </div>
           </div>
