@@ -50,9 +50,10 @@ export const ProductForm = ({ onAddProduct }: ProductFormProps) => {
   };
 
   const generateBarcode = () => {
-    // Generate a 13-digit EAN-13 compatible barcode
+    // Generate a unique barcode using timestamp and random number
     const timestamp = Date.now().toString();
-    return timestamp.slice(-12) + "0"; // Last 12 digits + check digit
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `${timestamp.slice(-8)}${random}`; // 11 digit code
   };
 
   return (

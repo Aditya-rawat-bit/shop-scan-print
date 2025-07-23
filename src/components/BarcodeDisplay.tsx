@@ -16,7 +16,7 @@ export const BarcodeDisplay = ({ product, onClose }: BarcodeDisplayProps) => {
   useEffect(() => {
     if (canvasRef.current) {
       JsBarcode(canvasRef.current, product.barcode, {
-        format: "EAN13",
+        format: "CODE128",
         width: 2,
         height: 100,
         displayValue: true,
