@@ -48,8 +48,8 @@ export const ProductList = ({ products, onDeleteProduct, onEditProduct }: Produc
                     <Badge variant="outline">{product.barcode}</Badge>
                   </div>
                   <div className="flex gap-4 text-sm text-muted-foreground">
-                    <span>Weight: {product.weight}kg</span>
-                    <span>Price: ${product.price.toFixed(2)}</span>
+                    <span>Weight: {product.weight}kg ({(product.weight * 1000).toFixed(0)}g)</span>
+                    <span>Price: ₹{product.price.toFixed(2)}</span>
                   </div>
                 </div>
                 

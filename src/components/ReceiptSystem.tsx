@@ -76,19 +76,19 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
         <div class="line"></div>
         <table>
           ${receipt.items.map(item => `
-            <tr>
-              <td>${item.name}</td>
-              <td class="right">${item.quantity}x</td>
-              <td class="right">$${(item.price * item.quantity).toFixed(2)}</td>
-            </tr>
+             <tr>
+               <td>${item.name}</td>
+               <td class="right">${item.quantity}x</td>
+               <td class="right">₹${(item.price * item.quantity).toFixed(2)}</td>
+             </tr>
           `).join('')}
         </table>
         <div class="line"></div>
         <table>
-          <tr>
-            <td><strong>TOTAL</strong></td>
-            <td class="right"><strong>$${receipt.total.toFixed(2)}</strong></td>
-          </tr>
+           <tr>
+             <td><strong>TOTAL</strong></td>
+             <td class="right"><strong>₹${receipt.total.toFixed(2)}</strong></td>
+           </tr>
         </table>
         <div class="line"></div>
         <div class="center">
@@ -109,10 +109,10 @@ ${receipt.timestamp.toLocaleString()}
 ${receipt.customerName ? `Customer: ${receipt.customerName}` : ''}
 -----------------------------
 ${receipt.items.map(item => 
-  `${item.name.padEnd(15)} ${item.quantity}x $${(item.price * item.quantity).toFixed(2).padStart(8)}`
+  `${item.name.padEnd(15)} ${item.quantity}x ₹${(item.price * item.quantity).toFixed(2).padStart(8)}`
 ).join('\n')}
 -----------------------------
-TOTAL${' '.repeat(15)}$${receipt.total.toFixed(2).padStart(8)}
+TOTAL${' '.repeat(15)}₹${receipt.total.toFixed(2).padStart(8)}
 =============================
     Thank you!
 =============================
@@ -160,7 +160,7 @@ TOTAL${' '.repeat(15)}$${receipt.total.toFixed(2).padStart(8)}
                   </TableCell>
                   <TableCell>{receipt.customerName || "Walk-in"}</TableCell>
                   <TableCell>{receipt.items.length} items</TableCell>
-                  <TableCell>${receipt.total.toFixed(2)}</TableCell>
+                  <TableCell>₹{receipt.total.toFixed(2)}</TableCell>
                   <TableCell>{receipt.timestamp.toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -242,10 +242,17 @@ TOTAL${' '.repeat(15)}$${receipt.total.toFixed(2).padStart(8)}
                 <TableBody>
                   {selectedReceipt.items.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.name}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div>{item.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {item.weight}kg ({(item.weight * 1000).toFixed(0)}g)
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell>{item.quantity}</TableCell>
-                      <TableCell>${item.price.toFixed(2)}</TableCell>
-                      <TableCell>${(item.price * item.quantity).toFixed(2)}</TableCell>
+                      <TableCell>₹{item.price.toFixed(2)}</TableCell>
+                      <TableCell>₹{(item.price * item.quantity).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -255,7 +262,7 @@ TOTAL${' '.repeat(15)}$${receipt.total.toFixed(2).padStart(8)}
               
               <div className="flex justify-between items-center">
                 <div className="text-xl font-bold">
-                  Total: ${selectedReceipt.total.toFixed(2)}
+                  Total: ₹{selectedReceipt.total.toFixed(2)}
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => handlePrint(selectedReceipt)}>

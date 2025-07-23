@@ -128,20 +128,20 @@ export const ProductForm = ({
               step="0.01"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              placeholder="Enter weight"
+              placeholder="Enter weight in kg"
               required
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="price">Price ($)</Label>
+            <Label htmlFor="price">Price (₹)</Label>
             <Input
               id="price"
               type="number"
               step="0.01"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="Enter price"
+              placeholder="Enter price in rupees"
               required
             />
           </div>

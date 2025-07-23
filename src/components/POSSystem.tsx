@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { ShoppingCart, Scan, Trash2, Plus, Minus, Receipt } from "lucide-react";
+import { ShoppingCart, Scan, Trash2, Plus, Minus, Receipt, Camera } from "lucide-react";
 import { Product } from "./ProductForm";
+import { BarcodeScanner } from "./BarcodeScanner";
 import { toast } from "sonner";
 
 interface CartItem extends Product {
@@ -22,6 +23,7 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -73,6 +75,16 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
     }
   };
 
+  const handleBarcodeDetected = (barcode: string) => {
+    const product = products.find(p => p.barcode === barcode);
+    if (product) {
+      addToCart(product);
+      setShowScanner(false);
+    } else {
+      toast.error("Product not found with this barcode");
+    }
+  };
+
   const handleCheckout = () => {
     if (cart.length === 0) {
       toast.error("Cart is empty");
@@ -111,7 +123,24 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
                 className="flex-1"
               />
               <Button type="submit">Add</Button>
+              <Button 
+                type="button" 
+                onClick={() => setShowScanner(true)}
+                variant="outline"
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
             </form>
+            
+            {showScanner && (
+              <div className="mt-4">
+                <BarcodeScanner
+                  onBarcodeDetected={handleBarcodeDetected}
+                  isVisible={showScanner}
+                  onClose={() => setShowScanner(false)}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -132,7 +161,7 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="text-sm text-muted-foreground">
-                        {product.weight}kg - ${product.price.toFixed(2)}
+                        {product.weight}kg ({(product.weight * 1000).toFixed(0)}g) - ₹{product.price.toFixed(2)}
                       </div>
                       <Button
                         size="sm"
@@ -189,7 +218,7 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
                           <div>
                             <div className="font-medium">{item.name}</div>
                             <div className="text-sm text-muted-foreground">
-                              {item.weight}kg
+                              {item.weight}kg ({(item.weight * 1000).toFixed(0)}g)
                             </div>
                           </div>
                         </TableCell>
@@ -212,8 +241,8 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell>${item.price.toFixed(2)}</TableCell>
-                        <TableCell>${(item.price * item.quantity).toFixed(2)}</TableCell>
+                        <TableCell>₹{item.price.toFixed(2)}</TableCell>
+                        <TableCell>₹{(item.price * item.quantity).toFixed(2)}</TableCell>
                         <TableCell>
                           <Button
                             size="sm"
@@ -233,7 +262,7 @@ export const POSSystem = ({ products, onGenerateReceipt }: POSSystemProps) => {
                 <div className="space-y-4">
                   <div className="text-right">
                     <div className="text-2xl font-bold">
-                      Total: ${total.toFixed(2)}
+                      Total: ₹{total.toFixed(2)}
                     </div>
                   </div>
                   
