@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Settings as SettingsIcon, Printer, Database, Download, Upload } from "lucide-react";
+import { Settings as SettingsIcon, Printer, Database, Download, Upload, Wifi } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "./ProductForm";
+import { bluetoothPrinter } from "@/utils/bluetoothPrinter";
 
 interface SettingsProps {
   products: Product[];
@@ -21,6 +22,7 @@ export const Settings = ({ products, onImportProducts }: SettingsProps) => {
   const [taxRate, setTaxRate] = useState("0");
   const [autoConnect, setAutoConnect] = useState(false);
   const [printerName, setPrinterName] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
 
   // Load settings from localStorage on component mount
   useEffect(() => {
@@ -123,87 +125,75 @@ export const Settings = ({ products, onImportProducts }: SettingsProps) => {
         return;
       }
 
-      // First try with printer-specific filters, if that fails, use acceptAllDevices
-      let device;
-      try {
-        device = await (navigator as any).bluetooth.requestDevice({
-          filters: [
-            { namePrefix: "POS" },
-            { namePrefix: "BT" },
-            { namePrefix: "Thermal" },
-            { namePrefix: "Printer" },
-            { namePrefix: "TP" },
-            { namePrefix: "Receipt" },
-            { namePrefix: "ESC" },
-            { services: ['000018f0-0000-1000-8000-00805f9b34fb'] },
-            { services: ['0000ff00-0000-1000-8000-00805f9b34fb'] },
-            { services: ['00001101-0000-1000-8000-00805f9b34fb'] }
-          ],
-          optionalServices: [
-            '000018f0-0000-1000-8000-00805f9b34fb',
-            '0000ff00-0000-1000-8000-00805f9b34fb',
-            '00001101-0000-1000-8000-00805f9b34fb',
-            '0000180f-0000-1000-8000-00805f9b34fb'
-          ]
-        });
-      } catch (filterError) {
-        // If filtered search fails, use acceptAllDevices as fallback
-        device = await (navigator as any).bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [
-            '000018f0-0000-1000-8000-00805f9b34fb',
-            '0000ff00-0000-1000-8000-00805f9b34fb',
-            '00001101-0000-1000-8000-00805f9b34fb',
-            '0000180f-0000-1000-8000-00805f9b34fb'
-          ]
-        });
-      }
+      toast("Searching for printers...", { duration: 2000 });
 
-      setPrinterName(device.name || "Bluetooth Printer");
-      toast.success(`✅ Connected to "${device.name || "Bluetooth Printer"}" successfully!`);
+      const deviceName = await bluetoothPrinter.connect();
+      setPrinterName(deviceName);
+      setIsConnected(true);
+      
+      toast.success(`✅ Printer "${deviceName}" connected and ready!`);
     } catch (error: any) {
-      if (error.name === 'NotFoundError') {
+      console.error("Bluetooth connection error:", error);
+      if (error.message.includes('NotFoundError')) {
         toast.error("No Bluetooth devices found. Make sure your printer is on and in pairing mode.");
-      } else if (error.name === 'NotAllowedError') {
+      } else if (error.message.includes('NotAllowedError')) {
         toast.error("Bluetooth access denied. Please allow Bluetooth permissions.");
+      } else if (error.message.includes('NetworkError')) {
+        toast.error("Failed to connect to printer. Make sure it's in pairing mode.");
       } else {
         toast.error("Failed to connect: " + error.message);
       }
+      setIsConnected(false);
     }
   };
 
-  const testPrint = () => {
-    if (!printerName) {
-      toast.error("No printer connected");
+  const disconnectPrinter = () => {
+    bluetoothPrinter.disconnect();
+    setIsConnected(false);
+    setPrinterName("");
+    toast.success("Printer disconnected");
+  };
+
+  const testPrint = async () => {
+    if (!bluetoothPrinter.getConnectionStatus()) {
+      toast.error("No printer connected. Please connect first.");
       return;
     }
 
-    // Create a test receipt
-    const testReceipt = `
-=============================
-         ${shopName}
-${shopAddress ? shopAddress + '\n' : ''}${shopPhone ? shopPhone + '\n' : ''}
-=============================
-TEST PRINT
-${new Date().toLocaleString()}
------------------------------
-Test Item               $1.00
------------------------------
-TOTAL                   $1.00
-=============================
-    Test Successful!
-=============================
-    `;
+    try {
+      // ESC/POS commands for thermal printer
+      const ESC = '\x1B';
+      const LF = '\x0A';
+      
+      // Create test receipt with proper ESC/POS formatting
+      let testReceipt = ESC + '@'; // Initialize printer
+      testReceipt += ESC + 'a' + '\x01'; // Center align
+      testReceipt += '================================' + LF;
+      testReceipt += shopName + LF;
+      if (shopAddress) testReceipt += shopAddress + LF;
+      if (shopPhone) testReceipt += shopPhone + LF;
+      testReceipt += '================================' + LF;
+      testReceipt += ESC + 'a' + '\x00'; // Left align
+      testReceipt += 'TEST PRINT' + LF;
+      testReceipt += new Date().toLocaleString() + LF;
+      testReceipt += '--------------------------------' + LF;
+      testReceipt += 'Test Item               ₹1.00' + LF;
+      testReceipt += '--------------------------------' + LF;
+      testReceipt += ESC + 'E' + '\x01'; // Bold on
+      testReceipt += 'TOTAL                   ₹1.00' + LF;
+      testReceipt += ESC + 'E' + '\x00'; // Bold off
+      testReceipt += '================================' + LF;
+      testReceipt += ESC + 'a' + '\x01'; // Center align
+      testReceipt += 'Test Successful!' + LF;
+      testReceipt += '================================' + LF + LF + LF;
+      testReceipt += ESC + 'd' + '\x03'; // Feed and cut
 
-    // For now, just open print dialog
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`<pre>${testReceipt}</pre>`);
-      printWindow.document.close();
-      printWindow.print();
+      await bluetoothPrinter.print(testReceipt);
+      toast.success("✅ Test print sent to thermal printer!");
+    } catch (error: any) {
+      console.error("Print error:", error);
+      toast.error("Failed to print: " + error.message);
     }
-    
-    toast.success("Test print sent to printer");
   };
 
   return (
@@ -288,19 +278,31 @@ TOTAL                   $1.00
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>Connected Printer</Label>
+                <Label className="flex items-center gap-2">
+                  Connected Printer
+                  {bluetoothPrinter.getConnectionStatus() && <Wifi className="h-4 w-4 text-green-500" />}
+                </Label>
                 <p className="text-sm text-muted-foreground">
-                  {printerName || "No printer connected"}
+                  {bluetoothPrinter.getDeviceName() || "No printer connected"}
+                  {bluetoothPrinter.getConnectionStatus() && " (Connected)"}
                 </p>
               </div>
-              <Button onClick={handleConnectPrinter}>
-                Connect Bluetooth Printer
-              </Button>
+              <div className="flex gap-2">
+                {bluetoothPrinter.getConnectionStatus() ? (
+                  <Button variant="outline" onClick={disconnectPrinter}>
+                    Disconnect
+                  </Button>
+                ) : (
+                  <Button onClick={handleConnectPrinter}>
+                    Connect Bluetooth Printer
+                  </Button>
+                )}
+              </div>
             </div>
             
-            {printerName && (
+            {bluetoothPrinter.getConnectionStatus() && (
               <Button variant="outline" onClick={testPrint}>
-                Test Print
+                🖨️ Test Print Receipt
               </Button>
             )}
           </div>

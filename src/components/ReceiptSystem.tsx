@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Download, Printer, Receipt, Trash2 } from "lucide-react";
+import { Download, Printer, Receipt, Trash2, Bluetooth } from "lucide-react";
 import { Product } from "./ProductForm";
+import { bluetoothPrinter } from "@/utils/bluetoothPrinter";
+import { toast } from "sonner";
 
 interface CartItem extends Product {
   quantity: number;
@@ -65,7 +67,21 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
     }
   }, []);
 
-  const handlePrint = (receipt: ReceiptData) => {
+  const handlePrint = async (receipt: ReceiptData) => {
+    // Try Bluetooth printing first if connected
+    if (bluetoothPrinter.getConnectionStatus()) {
+      try {
+        const thermalReceipt = generateThermalReceipt(receipt);
+        await bluetoothPrinter.print(thermalReceipt);
+        toast.success("Receipt printed to thermal printer!");
+        return;
+      } catch (error: any) {
+        console.error("Thermal print failed:", error);
+        toast.error("Thermal print failed: " + error.message);
+      }
+    }
+
+    // Fallback to browser print
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
@@ -180,6 +196,57 @@ Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart
     `;
   };
 
+  const generateThermalReceipt = (receipt: ReceiptData) => {
+    const subtotal = receipt.total / (1 + shopSettings.taxRate / 100);
+    const taxAmount = receipt.total - subtotal;
+    
+    // ESC/POS commands
+    const ESC = '\x1B';
+    const LF = '\x0A';
+    
+    let thermalReceipt = ESC + '@'; // Initialize printer
+    thermalReceipt += ESC + 'a' + '\x01'; // Center align
+    thermalReceipt += '================================' + LF;
+    thermalReceipt += shopSettings.shopName + LF;
+    if (shopSettings.shopAddress) thermalReceipt += shopSettings.shopAddress + LF;
+    if (shopSettings.shopPhone) thermalReceipt += 'Phone: ' + shopSettings.shopPhone + LF;
+    thermalReceipt += '================================' + LF;
+    thermalReceipt += ESC + 'a' + '\x00'; // Left align
+    thermalReceipt += 'Receipt #' + receipt.id.slice(0, 8) + LF;
+    thermalReceipt += receipt.timestamp.toLocaleString() + LF;
+    if (receipt.customerName) thermalReceipt += 'Customer: ' + receipt.customerName + LF;
+    thermalReceipt += '--------------------------------' + LF;
+    
+    // Items
+    receipt.items.forEach(item => {
+      thermalReceipt += item.name + LF;
+      thermalReceipt += `${item.quantity}x ₹${item.discountedPrice.toFixed(2)} = ₹${(item.discountedPrice * item.quantity).toFixed(2)}` + LF;
+      if (item.mainPrice !== item.discountedPrice) {
+        thermalReceipt += `(Was: ₹${item.mainPrice.toFixed(2)})` + LF;
+      }
+    });
+    
+    thermalReceipt += '--------------------------------' + LF;
+    
+    if (shopSettings.taxRate > 0) {
+      thermalReceipt += `Subtotal:           ₹${subtotal.toFixed(2)}` + LF;
+      thermalReceipt += `Tax (${shopSettings.taxRate}%):            ₹${taxAmount.toFixed(2)}` + LF;
+      thermalReceipt += '--------------------------------' + LF;
+    }
+    
+    thermalReceipt += ESC + 'E' + '\x01'; // Bold on
+    thermalReceipt += `TOTAL:              ₹${receipt.total.toFixed(2)}` + LF;
+    thermalReceipt += ESC + 'E' + '\x00'; // Bold off
+    thermalReceipt += '================================' + LF;
+    thermalReceipt += ESC + 'a' + '\x01'; // Center align
+    thermalReceipt += 'Thank you for your business!' + LF;
+    thermalReceipt += 'Visit us again!' + LF;
+    thermalReceipt += '================================' + LF + LF + LF;
+    thermalReceipt += ESC + 'd' + '\x03'; // Feed and cut
+    
+    return thermalReceipt;
+  };
+
   if (receipts.length === 0) {
     return (
       <Card className="w-full">
@@ -236,8 +303,9 @@ Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart
                         variant="outline"
                         size="sm"
                         onClick={() => handlePrint(receipt)}
+                        title={bluetoothPrinter.getConnectionStatus() ? "Print to thermal printer" : "Print using browser"}
                       >
-                        <Printer className="h-4 w-4" />
+                        {bluetoothPrinter.getConnectionStatus() ? <Bluetooth className="h-4 w-4" /> : <Printer className="h-4 w-4" />}
                       </Button>
                       <Button
                         variant="outline"
@@ -332,8 +400,8 @@ Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => handlePrint(selectedReceipt)}>
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print
+                    {bluetoothPrinter.getConnectionStatus() ? <Bluetooth className="h-4 w-4 mr-2" /> : <Printer className="h-4 w-4 mr-2" />}
+                    {bluetoothPrinter.getConnectionStatus() ? "Print to Thermal" : "Print"}
                   </Button>
                   <Button variant="outline" onClick={() => handleDownload(selectedReceipt)}>
                     <Download className="h-4 w-4 mr-2" />
