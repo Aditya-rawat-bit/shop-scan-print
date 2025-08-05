@@ -123,9 +123,20 @@ export const Settings = ({ products, onImportProducts }: SettingsProps) => {
         return;
       }
 
-      // Request Bluetooth device - use acceptAllDevices for broader compatibility
+      // Request Bluetooth device with printer-specific filters
       const device = await (navigator as any).bluetooth.requestDevice({
-        acceptAllDevices: true,
+        filters: [
+          { namePrefix: "POS" },
+          { namePrefix: "BT" },
+          { namePrefix: "Thermal" },
+          { namePrefix: "Printer" },
+          { namePrefix: "TP" },
+          { namePrefix: "Receipt" },
+          { namePrefix: "ESC" },
+          { services: ['000018f0-0000-1000-8000-00805f9b34fb'] },
+          { services: ['0000ff00-0000-1000-8000-00805f9b34fb'] },
+          { services: ['00001101-0000-1000-8000-00805f9b34fb'] }
+        ],
         optionalServices: [
           '000018f0-0000-1000-8000-00805f9b34fb',
           '0000ff00-0000-1000-8000-00805f9b34fb',
@@ -134,11 +145,29 @@ export const Settings = ({ products, onImportProducts }: SettingsProps) => {
         ]
       });
 
-      setPrinterName(device.name || "Unknown Printer");
-      toast.success(`Connected to ${device.name || "Bluetooth Printer"}`);
+      // Validate that it's likely a printer based on name
+      const deviceName = device.name || "";
+      const isPrinterName = deviceName.toLowerCase().includes('printer') || 
+                           deviceName.toLowerCase().includes('pos') || 
+                           deviceName.toLowerCase().includes('thermal') ||
+                           deviceName.toLowerCase().includes('receipt') ||
+                           deviceName.toLowerCase().includes('bt') ||
+                           deviceName.toLowerCase().includes('tp');
+
+      if (!isPrinterName && deviceName) {
+        const confirmConnect = confirm(`"${deviceName}" doesn't appear to be a printer. Connect anyway?`);
+        if (!confirmConnect) {
+          return;
+        }
+      }
+
+      setPrinterName(device.name || "Bluetooth Printer");
+      toast.success(`✅ Printer "${device.name || "Bluetooth Printer"}" connected successfully!`);
     } catch (error: any) {
       if (error.name === 'NotFoundError') {
-        toast.error("No Bluetooth printer found. Make sure your printer is in pairing mode.");
+        toast.error("No printer found. Make sure your thermal printer is on and in pairing mode.");
+      } else if (error.name === 'NotAllowedError') {
+        toast.error("Bluetooth access denied. Please allow Bluetooth permissions.");
       } else {
         toast.error("Failed to connect to printer: " + error.message);
       }
