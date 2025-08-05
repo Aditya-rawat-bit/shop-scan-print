@@ -14,56 +14,27 @@ export class BluetoothPrinter {
 
   async connect(): Promise<string> {
     try {
-      // Request Bluetooth device
-      let device;
-      try {
-        device = await (navigator as any).bluetooth.requestDevice({
-          filters: [
-            { namePrefix: "POS" },
-            { namePrefix: "BT" },
-            { namePrefix: "Thermal" },
-            { namePrefix: "Printer" },
-            { namePrefix: "TP" },
-            { namePrefix: "Receipt" },
-            { namePrefix: "ESC" },
-            { services: ['000018f0-0000-1000-8000-00805f9b34fb'] },
-            { services: ['0000ff00-0000-1000-8000-00805f9b34fb'] },
-            { services: ['00001101-0000-1000-8000-00805f9b34fb'] }
-          ],
-          optionalServices: [
-            '000018f0-0000-1000-8000-00805f9b34fb',
-            '0000ff00-0000-1000-8000-00805f9b34fb',
-            '00001101-0000-1000-8000-00805f9b34fb',
-            '0000180f-0000-1000-8000-00805f9b34fb'
-          ]
-        });
-      } catch (filterError) {
-        device = await (navigator as any).bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [
-            '000018f0-0000-1000-8000-00805f9b34fb',
-            '0000ff00-0000-1000-8000-00805f9b34fb',
-            '00001101-0000-1000-8000-00805f9b34fb',
-            '0000180f-0000-1000-8000-00805f9b34fb'
-          ]
-        });
-      }
+      // Simple approach - just show all Bluetooth devices
+      const device = await (navigator as any).bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [
+          '000018f0-0000-1000-8000-00805f9b34fb',
+          '0000ff00-0000-1000-8000-00805f9b34fb',
+          '00001101-0000-1000-8000-00805f9b34fb',
+          '0000180f-0000-1000-8000-00805f9b34fb',
+          '0000fff0-0000-1000-8000-00805f9b34fb'
+        ]
+      });
 
       // Connect to GATT server
       const server = await device.gatt!.connect();
       
-      // Find writable characteristic
-      const serviceUUIDs = [
-        '000018f0-0000-1000-8000-00805f9b34fb',
-        '0000ff00-0000-1000-8000-00805f9b34fb', 
-        '00001101-0000-1000-8000-00805f9b34fb'
-      ];
-
+      // Try to find any writable characteristic
       let writeCharacteristic;
+      const services = await server.getPrimaryServices();
       
-      for (const serviceUUID of serviceUUIDs) {
+      for (const service of services) {
         try {
-          const service = await server.getPrimaryService(serviceUUID);
           const characteristics = await service.getCharacteristics();
           
           for (const char of characteristics) {
@@ -79,10 +50,7 @@ export class BluetoothPrinter {
         }
       }
 
-      if (!writeCharacteristic) {
-        throw new Error("Could not find writable characteristic");
-      }
-
+      // If no writable characteristic found, still save device for future use
       this.device = device;
       this.characteristic = writeCharacteristic;
       this.isConnected = true;
