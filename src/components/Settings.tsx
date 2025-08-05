@@ -123,20 +123,14 @@ export const Settings = ({ products, onImportProducts }: SettingsProps) => {
         return;
       }
 
-      // Request Bluetooth device with more common filters for thermal printers
+      // Request Bluetooth device - use acceptAllDevices for broader compatibility
       const device = await (navigator as any).bluetooth.requestDevice({
-        filters: [
-          { namePrefix: "POS" },
-          { namePrefix: "BT" },
-          { namePrefix: "Thermal" },
-          { namePrefix: "Printer" },
-          { services: ['000018f0-0000-1000-8000-00805f9b34fb'] },
-          { services: ['0000ff00-0000-1000-8000-00805f9b34fb'] }
-        ],
+        acceptAllDevices: true,
         optionalServices: [
           '000018f0-0000-1000-8000-00805f9b34fb',
           '0000ff00-0000-1000-8000-00805f9b34fb',
-          '00001101-0000-1000-8000-00805f9b34fb'
+          '00001101-0000-1000-8000-00805f9b34fb',
+          '0000180f-0000-1000-8000-00805f9b34fb'
         ]
       });
 

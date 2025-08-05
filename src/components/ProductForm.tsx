@@ -33,8 +33,7 @@ export const ProductForm = ({
   onCancelEdit 
 }: ProductFormProps) => {
   const [name, setName] = useState(editingProduct?.name || "");
-  const [weightKg, setWeightKg] = useState(editingProduct ? Math.floor(editingProduct.weight / 1000).toString() : "0");
-  const [weightG, setWeightG] = useState(editingProduct ? (editingProduct.weight % 1000).toString() : "0");
+  const [weight, setWeight] = useState(editingProduct?.weight?.toString() || "");
   const [mainPrice, setMainPrice] = useState(editingProduct?.mainPrice?.toString() || "");
   const [discountedPrice, setDiscountedPrice] = useState(editingProduct?.discountedPrice?.toString() || "");
 
@@ -46,11 +45,8 @@ export const ProductForm = ({
       return;
     }
 
-    // Calculate total weight in grams
-    const totalWeightInGrams = (parseFloat(weightKg) * 1000) + parseFloat(weightG);
-    
-    if (totalWeightInGrams <= 0) {
-      toast.error("Please enter a valid weight");
+    if (!weight || parseFloat(weight) <= 0) {
+      toast.error("Please enter a valid weight in grams");
       return;
     }
 
@@ -70,7 +66,7 @@ export const ProductForm = ({
       const updatedProduct: Product = {
         ...editingProduct,
         name,
-        weight: totalWeightInGrams,
+        weight: parseFloat(weight),
         mainPrice: parseFloat(mainPrice),
         discountedPrice: parseFloat(discountedPrice),
       };
@@ -81,7 +77,7 @@ export const ProductForm = ({
       const product: Product = {
         id: uuidv4(),
         name,
-        weight: totalWeightInGrams,
+        weight: parseFloat(weight),
         mainPrice: parseFloat(mainPrice),
         discountedPrice: parseFloat(discountedPrice),
         barcode: generateBarcode(),
@@ -93,8 +89,7 @@ export const ProductForm = ({
 
     // Reset form
     setName("");
-    setWeightKg("0");
-    setWeightG("0");
+    setWeight("");
     setMainPrice("");
     setDiscountedPrice("");
     if (onCancelEdit) onCancelEdit();
@@ -108,8 +103,7 @@ export const ProductForm = ({
 
   const handleCancel = () => {
     setName("");
-    setWeightKg("0");
-    setWeightG("0");
+    setWeight("");
     setMainPrice("");
     setDiscountedPrice("");
     if (onCancelEdit) onCancelEdit();
@@ -138,32 +132,16 @@ export const ProductForm = ({
           </div>
           
           <div className="space-y-2">
-            <Label>Weight</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label htmlFor="weightKg" className="text-sm">Kilograms</Label>
-                <Input
-                  id="weightKg"
-                  type="number"
-                  min="0"
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="weightG" className="text-sm">Grams</Label>
-                <Input
-                  id="weightG"
-                  type="number"
-                  min="0"
-                  max="999"
-                  value={weightG}
-                  onChange={(e) => setWeightG(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-            </div>
+            <Label htmlFor="weight">Weight (grams)</Label>
+            <Input
+              id="weight"
+              type="number"
+              min="0"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder="Enter weight in grams (e.g., 200 for 200g, 1000 for 1kg)"
+              required
+            />
           </div>
           
           <div className="space-y-2">
