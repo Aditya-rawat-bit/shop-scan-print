@@ -137,7 +137,7 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
              <tr>
                <td>${item.name}</td>
                <td class="right">${item.quantity}x</td>
-               <td class="right">₹${(item.discountedPrice * item.quantity).toFixed(2)}</td>
+               <td class="right">Rs.${(item.discountedPrice * item.quantity).toFixed(2)}</td>
              </tr>
           `).join('')}
         </table>
@@ -146,16 +146,16 @@ export const ReceiptSystem = ({ receipts, onDeleteReceipt }: ReceiptSystemProps)
            ${shopSettings.taxRate > 0 ? `
            <tr>
              <td>Subtotal</td>
-             <td class="right">₹${subtotal.toFixed(2)}</td>
+             <td class="right">Rs.${subtotal.toFixed(2)}</td>
            </tr>
            <tr>
              <td>Tax (${shopSettings.taxRate}%)</td>
-             <td class="right">₹${taxAmount.toFixed(2)}</td>
+             <td class="right">Rs.${taxAmount.toFixed(2)}</td>
            </tr>
            ` : ''}
            <tr>
              <td><strong>TOTAL</strong></td>
-             <td class="right"><strong>₹${receipt.total.toFixed(2)}</strong></td>
+             <td class="right"><strong>Rs.${receipt.total.toFixed(2)}</strong></td>
            </tr>
         </table>
         <div class="line"></div>
@@ -182,13 +182,13 @@ ${receipt.timestamp.toLocaleString()}
 ${receipt.customerName ? `Customer: ${receipt.customerName}` : ''}
 -----------------------------
 ${receipt.items.map(item => 
-  `${item.name.padEnd(15)} ${item.quantity}x ₹${(item.discountedPrice * item.quantity).toFixed(2).padStart(8)}`
+  `${item.name.padEnd(15)} ${item.quantity}x Rs.${(item.discountedPrice * item.quantity).toFixed(2).padStart(8)}`
 ).join('\n')}
 -----------------------------
-${shopSettings.taxRate > 0 ? `Subtotal${' '.repeat(10)}₹${subtotal.toFixed(2).padStart(8)}
-Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart(8)}
+${shopSettings.taxRate > 0 ? `Subtotal${' '.repeat(10)}Rs.${subtotal.toFixed(2).padStart(8)}
+Tax (${shopSettings.taxRate}%)${' '.repeat(8)}Rs.${taxAmount.toFixed(2).padStart(8)}
 -----------------------------
-` : ''}TOTAL${' '.repeat(15)}₹${receipt.total.toFixed(2).padStart(8)}
+` : ''}TOTAL${' '.repeat(15)}Rs.${receipt.total.toFixed(2).padStart(8)}
 =============================
     Thank you for your business!
          Visit us again!
@@ -206,42 +206,43 @@ Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart
     
     let thermalReceipt = ESC + '@'; // Initialize printer
     thermalReceipt += ESC + 'a' + '\x01'; // Center align
-    thermalReceipt += '================================' + LF;
+    thermalReceipt += '--------------------------------' + LF;
     thermalReceipt += shopSettings.shopName + LF;
     if (shopSettings.shopAddress) thermalReceipt += shopSettings.shopAddress + LF;
-    if (shopSettings.shopPhone) thermalReceipt += 'Phone: ' + shopSettings.shopPhone + LF;
-    thermalReceipt += '================================' + LF;
+    if (shopSettings.shopPhone) thermalReceipt += 'Ph: ' + shopSettings.shopPhone + LF;
+    thermalReceipt += '--------------------------------' + LF;
     thermalReceipt += ESC + 'a' + '\x00'; // Left align
     thermalReceipt += 'Receipt #' + receipt.id.slice(0, 8) + LF;
     thermalReceipt += receipt.timestamp.toLocaleString() + LF;
     if (receipt.customerName) thermalReceipt += 'Customer: ' + receipt.customerName + LF;
     thermalReceipt += '--------------------------------' + LF;
     
-    // Items
+    // Items (formatted for 2-inch width)
     receipt.items.forEach(item => {
-      thermalReceipt += item.name + LF;
-      thermalReceipt += `${item.quantity}x ₹${item.discountedPrice.toFixed(2)} = ₹${(item.discountedPrice * item.quantity).toFixed(2)}` + LF;
+      const itemName = item.name.length > 28 ? item.name.substring(0, 25) + '...' : item.name;
+      thermalReceipt += itemName + LF;
+      thermalReceipt += `${item.quantity}x Rs.${item.discountedPrice.toFixed(2)} = Rs.${(item.discountedPrice * item.quantity).toFixed(2)}` + LF;
       if (item.mainPrice !== item.discountedPrice) {
-        thermalReceipt += `(Was: ₹${item.mainPrice.toFixed(2)})` + LF;
+        thermalReceipt += `(Was: Rs.${item.mainPrice.toFixed(2)})` + LF;
       }
     });
     
     thermalReceipt += '--------------------------------' + LF;
     
     if (shopSettings.taxRate > 0) {
-      thermalReceipt += `Subtotal:           ₹${subtotal.toFixed(2)}` + LF;
-      thermalReceipt += `Tax (${shopSettings.taxRate}%):            ₹${taxAmount.toFixed(2)}` + LF;
+      thermalReceipt += `Subtotal:     Rs.${subtotal.toFixed(2)}` + LF;
+      thermalReceipt += `Tax (${shopSettings.taxRate}%):      Rs.${taxAmount.toFixed(2)}` + LF;
       thermalReceipt += '--------------------------------' + LF;
     }
     
     thermalReceipt += ESC + 'E' + '\x01'; // Bold on
-    thermalReceipt += `TOTAL:              ₹${receipt.total.toFixed(2)}` + LF;
+    thermalReceipt += `TOTAL:        Rs.${receipt.total.toFixed(2)}` + LF;
     thermalReceipt += ESC + 'E' + '\x00'; // Bold off
-    thermalReceipt += '================================' + LF;
+    thermalReceipt += '--------------------------------' + LF;
     thermalReceipt += ESC + 'a' + '\x01'; // Center align
-    thermalReceipt += 'Thank you for your business!' + LF;
+    thermalReceipt += 'Thank you!' + LF;
     thermalReceipt += 'Visit us again!' + LF;
-    thermalReceipt += '================================' + LF + LF + LF;
+    thermalReceipt += '--------------------------------' + LF + LF + LF;
     thermalReceipt += ESC + 'd' + '\x03'; // Feed and cut
     
     return thermalReceipt;
@@ -288,7 +289,7 @@ Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart
                   </TableCell>
                   <TableCell>{receipt.customerName || "Walk-in"}</TableCell>
                   <TableCell>{receipt.items.length} items</TableCell>
-                  <TableCell>₹{receipt.total.toFixed(2)}</TableCell>
+                  <TableCell>Rs.{receipt.total.toFixed(2)}</TableCell>
                   <TableCell>{receipt.timestamp.toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -382,11 +383,11 @@ Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart
                       <TableCell>{item.quantity}</TableCell>
                       <TableCell>
                         <div>
-                          <span className="line-through text-muted-foreground text-sm">₹{item.mainPrice.toFixed(2)}</span>
-                          <div>₹{item.discountedPrice.toFixed(2)}</div>
+                          <span className="line-through text-muted-foreground text-sm">Rs.{item.mainPrice.toFixed(2)}</span>
+                          <div>Rs.{item.discountedPrice.toFixed(2)}</div>
                         </div>
                       </TableCell>
-                      <TableCell>₹{(item.discountedPrice * item.quantity).toFixed(2)}</TableCell>
+                      <TableCell>Rs.{(item.discountedPrice * item.quantity).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -396,7 +397,7 @@ Tax (${shopSettings.taxRate}%)${' '.repeat(8)}₹${taxAmount.toFixed(2).padStart
               
               <div className="flex justify-between items-center">
                 <div className="text-xl font-bold">
-                  Total: ₹{selectedReceipt.total.toFixed(2)}
+                  Total: Rs.{selectedReceipt.total.toFixed(2)}
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => handlePrint(selectedReceipt)}>

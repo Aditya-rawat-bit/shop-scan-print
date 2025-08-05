@@ -177,10 +177,10 @@ export const Settings = ({ products, onImportProducts }: SettingsProps) => {
       testReceipt += 'TEST PRINT' + LF;
       testReceipt += new Date().toLocaleString() + LF;
       testReceipt += '--------------------------------' + LF;
-      testReceipt += 'Test Item               ₹1.00' + LF;
+      testReceipt += 'Test Item          Rs.1.00' + LF;
       testReceipt += '--------------------------------' + LF;
       testReceipt += ESC + 'E' + '\x01'; // Bold on
-      testReceipt += 'TOTAL                   ₹1.00' + LF;
+      testReceipt += 'TOTAL              Rs.1.00' + LF;
       testReceipt += ESC + 'E' + '\x00'; // Bold off
       testReceipt += '================================' + LF;
       testReceipt += ESC + 'a' + '\x01'; // Center align
